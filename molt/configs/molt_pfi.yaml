@@ -1,0 +1,347 @@
+# Complete endpoint template. Input and output roots must be supplied explicitly.
+defaults:
+- default.yaml
+experiment:
+  name: molt_pfi
+  model: molt
+  modes:
+  - full
+  - light
+  outer_folds_subset: null
+  keep_all_checkpoints: false
+  keep_work: false
+  parallel_jobs: 1
+  worker_threads: 0
+cv:
+  outer_folds: 5
+  inner_folds: 3
+  stratify_on:
+  - egfr_status
+  - pfi_event
+  - os_event
+  extra_indicator: null
+  rebuild: false
+data:
+  clinical:
+    numeric:
+    - age
+    - pack_years
+    - smoking_years
+    - years_since_quit
+    categorical:
+    - sex
+    - smoking_status
+    - histology_subtype
+    - ajcc_stage
+    - pT
+    - pN
+    - pM
+    - laterality
+    - lobe
+    - prior_malignancy
+    winsor_limits:
+      age:
+      - 18
+      - 95
+      pack_years:
+      - 0
+      - 150
+      smoking_years:
+      - 0
+      - 80
+      years_since_quit:
+      - 0
+      - 70
+    min_category_count: 2
+    partial_levels: coarsen
+    coarsen_p: 0.3
+    partial_min_count: 10
+    structural_zero: true
+    hierarchy:
+      smoking_status:
+        ever_unspecified:
+        - current
+        - former_le15
+        - former_gt15
+        - former_unspecified
+        former_unspecified:
+        - former_le15
+        - former_gt15
+      ajcc_stage:
+        I:
+        - IA
+        - IA1
+        - IA2
+        - IA3
+        - IB
+        II:
+        - IIA
+        - IIB
+        III:
+        - IIIA
+        - IIIB
+        - IIIC
+        IV:
+        - IVA
+        - IVB
+      pT:
+        T1:
+        - T1mi
+        - T1a
+        - T1b
+        - T1c
+        T2:
+        - T2a
+        - T2b
+      pM:
+        M1:
+        - M1a
+        - M1b
+        - M1c
+      laterality:
+        NA:
+        - left
+        - right
+      lobe:
+        NA:
+        - upper
+        - middle
+        - lower
+    coarsen_hide:
+      smoking_status:
+        ever_unspecified:
+        - smoking_years
+        - years_since_quit
+        former_unspecified:
+        - smoking_years
+        - years_since_quit
+    systematic_min_site_size: 5
+    site_column: site
+  rna:
+    enabled: true
+    min_expr_fraction: 0.2
+    mask_genes: []
+    exclude_genes:
+    - ALK
+    standardize_pathways: true
+    external_standardization: auto
+    gene_targets: true
+    sample_normalization: rank
+    augment:
+      enabled: false
+      p: 1.0
+      scale_sd: 0.05
+      shift_sd: 0.05
+      mask_min: 0.05
+      mask_max: 0.1
+      rank_sd: 0.05
+    gene_panel:
+      size: 0
+      min_mean: null
+      forced: []
+    batch_correction: none
+    batch_column: plate
+    sd_floor: 0.05
+    z_clip: 8.0
+    quality_missing_indicators: true
+  stacking:
+    folds: 5
+    n_lambdas: 12
+    lambda_ratio: 0.01
+    components: blocks
+    experts:
+      rna_lin:
+        inputs:
+        - clinical
+        - pathways
+        alphas:
+        - 0.5
+      clinical_lin:
+        inputs:
+        - clinical
+        alphas:
+        - 0.5
+    enabled: true
+  ct:
+    enabled: true
+    n_lung: 32
+    n_candidates: 32
+    patch_size: 64
+    hu_window:
+    - -1024
+    - 600
+    augment: true
+    cache_dir: null
+    feature_cache: false
+    feature_views: 4
+    feature_dir: null
+    require_timing: true
+    require_qc: true
+    timing_unknown_subset: false
+    candidate_jitter: 4
+    flip_p: 0.5
+    rotate_p: 0.5
+    intensity_scale: 0.05
+    intensity_shift: 0.02
+    noise_std: 0.01
+    smooth_p: 0.2
+    max_mask_points: 200000
+    memory_cache: 4
+    flags:
+    - effusion
+    - collapse
+    - consolidation
+    - mask_corrected
+    - truncation
+    - low_lung_volume
+    - timing_uncertain
+  survival:
+    endpoint: pfi
+    bin_width_months: 6
+    max_months: 60
+    primary_horizon_months: 24
+    require_modality: true
+    ipcw_min_prob: 0.05
+  domain:
+    key: site
+    min_count: 5
+model:
+  impl: molt
+  latent_dim: 32
+  ct_backbone: swin_vit
+  swin_checkpoint: null
+  dropout: 0.1
+  head_dropout: 0.2
+  modality_dropout_p: 0.2
+  modality_dropout_by:
+    rna: 0.8
+  modality_curriculum_epochs: 0
+  pathway_graph_mode: prior
+  pathway_prior: full
+  pathway_skip: true
+  clinical_skip: false
+  gene_hidden: 0
+  gene_input_dropout: 0.5
+  gene_dropout: 0.2
+  gene_weight_decay: null
+  expert_aux_heads: shared
+  fusion_rule: poe
+  use_reliability: true
+  rna_precision_experts: all
+  clinical_dim: 64
+  clinical_layers: 2
+  clinical_heads: 4
+  clinical_indicator_tokens: true
+  cat_mask_p: 0.1
+  num_mask_p: 0.0
+  pathway_dim: 64
+  pathway_layers: 2
+  pathway_heads: 4
+  node_id_dim: 16
+  n_rna_aux: 0
+  gene_mask_ratio: 0.15
+  gene_noise_std: 0.1
+  ct_embed_dim: 128
+  mil_hidden: 128
+  mil_gated: false
+  ct_chunk_size: 64
+  ct_grad_checkpoint: false
+  ct_recon: false
+  ct_recon_patches: 4
+  cnn_widths:
+  - 32
+  - 64
+  - 128
+  - 256
+  swin_feature_size: 48
+  fixed_reliability: []
+  expert_hidden: 0
+  latent_sampling: false
+  head_hidden: 64
+  init_hazard: 0.05
+  attn_dropout: 0.1
+  modality_dropout_exclude: []
+  grl_alpha: 1.0
+  modality_group_dropout: null
+  stacked_skip: false
+  omit_experts: []
+  gene_expert: true
+loss:
+  egfr: 1.0
+  surv: 1.0
+  multitask: false
+  recon: 0.1
+  domain: 0.0
+  brier: 0.1
+  attn_prior: 0.01
+  focal_gamma: 1.0
+  pos_weight: auto
+  label_smoothing: 0.0
+  expert_aux: 0.0
+  rank: 0.0
+  rank_scale: 1.0
+  gene_l1: 0.0
+  rna_precision: 0.0
+train:
+  batch_size: 32
+  eval_batch_size: 64
+  max_epochs: 60
+  min_epochs: 10
+  patience: 12
+  lr: 0.0003
+  weight_decay: 0.01
+  warmup_epochs: 2
+  grad_clip: 1.0
+  amp: true
+  members: 5
+  mc_samples: 10
+  modality_dropout: true
+  num_workers: 0
+  monitor: metric
+  ct_backbone_lr_scale: 0.1
+  head_lr_scale: 1.0
+  pretrain_epochs: 0
+  min_lr_ratio: 0.02
+  pretrain_lr: 0.001
+  pretrain_mask: 0.25
+  pretrain_noise: 0.1
+  grl_schedule: true
+search:
+  n_configs: 12
+  selection_modes:
+    full: 1.0
+    light: 1.0
+  selection_metric_weight: 0.0
+  grid:
+    train.lr:
+    - 0.0003
+    - 0.001
+    train.weight_decay:
+    - 0.0001
+    - 0.01
+    data.survival.bin_width_months:
+    - 6
+    - 12
+    loss.rank:
+    - 0.0
+    - 0.5
+  per_outer_fold: null
+calibration:
+  sensitivity_target: 0.9
+  coverage: 0.9
+  conformal_alpha: 0.05
+  risk_cutoffs:
+  - 0.2
+  - 0.4
+  horizons_months:
+  - 12
+  - 24
+  - 36
+  abstain_on_quality_flag: true
+recalibration:
+  pfi_intercepts: horizon
+evaluation:
+  summary_bootstrap: 200
+  comparison: false
+hardware:
+  cpu_threads: 4

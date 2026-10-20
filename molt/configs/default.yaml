@@ -1,0 +1,13 @@
+seed: 20240613
+paths:
+  cohorts_dir: null
+  ct_dir: null
+  pathways_dir: null
+  runs_root: null
+  splits_dir: null
+  state_dir: null
+cohorts:
+  development: []
+hardware:
+  device: cpu
+  cpu_threads: 4

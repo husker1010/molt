@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molt"
+version = "0.1.0"
+description = "MOLT multimodal model, preprocessing, training, inference and evaluation"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24", "pandas>=2.0", "pyarrow>=12", "pyyaml>=6.0", "rich>=13",
+  "scipy>=1.10", "scikit-learn>=1.3", "torch>=2.1", "lifelines>=0.27",
+  "scikit-survival>=0.22", "filelock>=3.12", "joblib>=1.3", "iterative-stratification>=0.1.7"
+]
+
+[project.optional-dependencies]
+imaging = ["monai>=1.3", "einops>=0.6", "SimpleITK>=2.3", "pydicom>=2.4", "matplotlib>=3.7"]
+segmentation = ["lungmask>=0.2"]
+
+[project.scripts]
+molt = "molt.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["molt*"]
+
+[tool.setuptools.package-data]
+molt = ["py.typed", "configs/*.yaml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
